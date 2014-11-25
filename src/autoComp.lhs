@@ -1,5 +1,5 @@
 \section{Convenient Functions for Accompaniments}
-\label{test-functions}
+\label{accomp}
 
 {\small
 \begin{verbatim} 

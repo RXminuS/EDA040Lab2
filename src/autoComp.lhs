@@ -38,13 +38,13 @@
 > autoBass Calypso _ chordP = times 2 (Rest qn :+: (line $ zipWith fd [en,en] [c 4, g 4])) 
 > autoBass Boogie _ chordP = times 2 (line $ zipWith fd [en,en,en,en] [c 4, g 4,a 4, g 4])
 >
-> chordMode Key -> Chord -> [(Dur->[NoteAttribute])]
-> chordMode =  
+> --chordMode Key -> Chord -> [(Dur->[NoteAttribute])]
+> --chordMode =  
 >
-> shift Int -> [PitchClass] -> [PitchClass]
+> shift :: Int -> [PitchClass] -> [PitchClass]
 > shift n l= (iterate f l)!!n
->		where f [] = [] |
->		      f (x:xs) = xs ++ x  
+>		where f [] = [] 
+>		      f (x:xs) = xs ++ [x]  
 >
 > testAutoBass = autoBass Boogie (C,Major) [((C,TriMaj), wn), ((E, TriMin), wn)]
 > 

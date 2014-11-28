@@ -14,8 +14,8 @@
 > type Chord = (PitchClass, Triad)
 > data BassStyle = Basic | Calypso | Boogie deriving (Eq)
 > type ChordProgresion = [(Chord,Dur)]
-> --type PitchTriad=(Pich,Pitch,Pitch)
-> --type ChordClass = [PitchTriad]
+> type ChordPitch = (Pitch, Pitch, Pitch)
+>
 > -- note updaters for mappings
 > fd d n = n d v
 > vol  n = n   v
@@ -34,11 +34,8 @@
 > scalePattern (pc, Minor) = fst.unzip.zipWith trans [0, 2, 3, 5, 7, 8, 10] $ repeat (pc, 3)
 >
 > testScalePattern = scalePattern (A, Major)
-> --chord :: Chord -> Dur -> Music
-> --chord (pitch, triad) _ = foldr1 (:=:) zipWith trans (triadPattern triad) pitch
 >
 > autoBass :: BassStyle-> Key -> ChordProgresion -> Music
-> --autoBass _ _ _ = Instr "bass" (Note (C, 4) qn [Volume 80])
 > autoBass style key [] = Rest 0
 > autoBass Basic key (chord:[])
 >   | (snd chord == hn) = line $ zipWith fd [hn] [t!!0]
@@ -75,6 +72,28 @@
 >		      f (x:xs) = xs ++ [x]
 >
 > testAutoBass = autoBass Boogie (C,Major) [((C,TriMaj), wn), ((F, TriMaj), hn),((C,TriMaj),hn),((G,TriMaj),hn),((C,TriMaj),hn),((G,TriMaj),hn),((C,TriMaj),hn)]
+>
+>
+> ------------------------------------ Chords -------------------------------------
+>
+> chordPattern :: Key ->[Pitch]
+> chordPattern (pc, Major) = zipWith trans [0, 2, 4, 5, 7, 9, 11,12,14,16,17,19] $ repeat (pc, 4)
+> chordPattern (pc, Minor) = zipWith trans [0, 2, 3, 5, 7, 8, 10,12,14,15,17,19] $ repeat (pc, 4)
+>
+> autoChord :: Key -> ChordProgression -> Music
+> 
+> chordChart :: Key -> [ChordPitch]
+> chordChart =  
+>
+> distance :: ChordPitch -> ChordPitch -> Integer
+>
+> minimize :: ChordPitch -> [ChordPitch] -> ChordPitch
+>
+> pick :: Chord -> [ChordPitch]
+>
+>
+>
+>
 >
 >
 

@@ -40,8 +40,11 @@
 > autoBass :: BassStyle-> Key -> ChordProgresion -> Music
 > --autoBass _ _ _ = Instr "bass" (Note (C, 4) qn [Volume 80])
 > autoBass style key [] = Rest 0
-> autoBass Basic key (chord:[]) = line $ zipWith fd [hn,hn] [t!!0,t!!4]
-> 	where t =  chordMode key (fst $ chord)
+> autoBass Basic key (chord:[])
+>   | (snd chord == hn) = line $ zipWith fd [hn] [t!!0]
+>   | (snd chord == wn) = line $ zipWith fd [hn,hn] [t!!0,t!!4]
+>   | otherwise = Rest (snd chord)
+>   where t =  chordMode key (fst $ chord)
 >
 > autoBass Calypso key (chord:[])
 >   | (snd chord == hn) = bar
@@ -50,8 +53,12 @@
 >   where bar = Rest qn :+: (line $ zipWith fd [en,en] [t!!0,t!!2])
 >         t   = chordMode key (fst $ chord)
 >
-> autoBass Boogie key (chord:[]) = times 2 (line $ zipWith fd [en,en,en,en] [t!!0,t!!4,t!!5,t!!4])
-> 	where t =  chordMode key (fst $ chord)
+> autoBass Boogie key (chord:[])
+>   | (snd chord == hn) = bar
+>   | (snd chord == wn) = times 2 bar
+>   | otherwise = Rest (snd chord)
+>   where bar = line $ zipWith fd [en,en,en,en] [t!!0,t!!4,t!!5,t!!4]
+>         t =  chordMode key (fst $ chord)
 > autoBass style key (c:cs) = autoBass style key [c] :+: autoBass style key cs
 >
 > chordMode :: Key -> Chord -> [Dur->[NoteAttribute]-> Music]

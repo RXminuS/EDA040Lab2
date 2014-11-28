@@ -16,7 +16,6 @@
 > type ChordProgresion = [(Chord,Dur)]
 > --type PitchTriad=(Pich,Pitch,Pitch)
 > --type ChordClass = [PitchTriad]
-
 > -- note updaters for mappings
 > fd d n = n d v
 > vol  n = n   v
@@ -41,19 +40,28 @@
 > autoBass :: BassStyle-> Key -> ChordProgresion -> Music
 > --autoBass _ _ _ = Instr "bass" (Note (C, 4) qn [Volume 80])
 > autoBass style key [] = Rest 0
-> autoBass Basic key (chord:[]) = line $ zipWith fd [hn,hn] [t!!1,t!!5]  
+> autoBass Basic key (chord:[]) = line $ zipWith fd [hn,hn] [t!!1,t!!5]
 > 	where t =  chordMode key (fst $ chord)
-> autoBass Calypso key (chord:[]) = times 2 (Rest qn :+: (line $ zipWith fd [en,en] [t!!1,t!!3]))
-> 	where t =  chordMode key (fst $ chord)
+>
+> autoBass Calypso key (chord:[])
+>   | (snd chord == hn) = bar
+>   | (snd chord == wn) = times 2 bar
+>   | otherwise = Rest (fst chord)
+> 	  where bar = Rest qn :+: (line $ zipWith fd [en,en] [t!!1,t!!3])
+>           t   = chordMode key (fst $ chord)
+>
+>
+>
 > autoBass Boogie key (chord:[]) = times 2 (line $ zipWith fd [en,en,en,en] [t!!1,t!!5,t!!6,t!!5])
 > 	where t =  chordMode key (fst $ chord)
 > autoBass style key (c:cs) = autoBass style key [c] :+: autoBass style key cs
 >
 > chordMode :: Key -> Chord -> [Dur->[NoteAttribute]-> Music]
-> chordMode key (pc,_) = map Note $ zip transformedPitches (repeat 3)
+> chordMode key (pc,_) = map Note $ cleanOctave.zip transformedPitches (repeat 3)
 >                        where f (Just a) = shift a (scalePattern key)
 >                              f _  = take 12 $ repeat pc
 >                              transformedPitches = f (elemIndex pc (scalePattern key))
+>                              cleanOctave = id
 >
 > shift :: Int -> [PitchClass] -> [PitchClass]
 > shift n l= (iterate f l)!!n

@@ -40,19 +40,17 @@
 > autoBass :: BassStyle-> Key -> ChordProgresion -> Music
 > --autoBass _ _ _ = Instr "bass" (Note (C, 4) qn [Volume 80])
 > autoBass style key [] = Rest 0
-> autoBass Basic key (chord:[]) = line $ zipWith fd [hn,hn] [t!!1,t!!5]
+> autoBass Basic key (chord:[]) = line $ zipWith fd [hn,hn] [t!!0,t!!4]
 > 	where t =  chordMode key (fst $ chord)
 >
 > autoBass Calypso key (chord:[])
 >   | (snd chord == hn) = bar
 >   | (snd chord == wn) = times 2 bar
 >   | otherwise = Rest (snd chord)
->   where bar = Rest qn :+: (line $ zipWith fd [en,en] [t!!1,t!!3])
+>   where bar = Rest qn :+: (line $ zipWith fd [en,en] [t!!0,t!!2])
 >         t   = chordMode key (fst $ chord)
 >
->
->
-> autoBass Boogie key (chord:[]) = times 2 (line $ zipWith fd [en,en,en,en] [t!!1,t!!5,t!!6,t!!5])
+> autoBass Boogie key (chord:[]) = times 2 (line $ zipWith fd [en,en,en,en] [t!!0,t!!4,t!!5,t!!4])
 > 	where t =  chordMode key (fst $ chord)
 > autoBass style key (c:cs) = autoBass style key [c] :+: autoBass style key cs
 >
@@ -61,14 +59,15 @@
 >                        where f (Just a) = shift a (scalePattern key)
 >                              f _  = take 12 $ repeat pc
 >                              transformedPitches = f (elemIndex pc (scalePattern key))
->                              cleanOctave = id
->
+>                              octaveSplit scale = partition (octaveSplitTest scale) scale
+>                              octaveSplitTest scale p = absPitch p >= (head $ map absPitch scale)
+>                              cleanOctave scale = (fst.octaveSplit) scale ++ map (trans 12) (snd.octaveSplit $ scale)
 > shift :: Int -> [PitchClass] -> [PitchClass]
 > shift n l= (iterate f l)!!n
 >		where f [] = []
 >		      f (x:xs) = xs ++ [x]
 >
-> testAutoBass = autoBass Boogie (C,Major) [((C,TriMaj), wn), ((F, TriMaj), wn)]
+> testAutoBass = autoBass Boogie (C,Major) [((C,TriMaj), wn), ((F, TriMaj), hn),((C,TriMaj),hn),((G,TriMaj),hn),((C,TriMaj),hn),((G,TriMaj),hn),((C,TriMaj),hn)]
 >
 >
 

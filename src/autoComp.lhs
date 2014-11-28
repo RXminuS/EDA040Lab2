@@ -46,23 +46,22 @@
 > autoBass Calypso key (chord:[])
 >   | (snd chord == hn) = bar
 >   | (snd chord == wn) = times 2 bar
->   | otherwise = Rest (fst chord)
-> 	  where bar = Rest qn :+: (line $ zipWith fd [en,en] [t!!1,t!!3])
->           t   = chordMode key (fst $ chord)
->
->
+>   | otherwise = Rest (snd chord)
+>   where bar = Rest qn :+: (line $ zipWith fd [en,en] [t!!1,t!!3])
+>         t   = chordMode key (fst $ chord)
 >
 > autoBass Boogie key (chord:[]) = times 2 (line $ zipWith fd [en,en,en,en] [t!!1,t!!5,t!!6,t!!5])
 > 	where t =  chordMode key (fst $ chord)
 > autoBass style key (c:cs) = autoBass style key [c] :+: autoBass style key cs
 >
 > chordMode :: Key -> Chord -> [Dur->[NoteAttribute]-> Music]
-> chordMode key (pc,_) = map Note $ cleanOctave.zip transformedPitches (repeat 3)
+> chordMode key (pc,_) = map Note $ cleanOctave $ zip transformedPitches (repeat 3)
 >                        where f (Just a) = shift a (scalePattern key)
 >                              f _  = take 12 $ repeat pc
 >                              transformedPitches = f (elemIndex pc (scalePattern key))
->                              cleanOctave = id
->
+>                              octaveSplit scale = partition (octaveSplitTest scale) scale
+>                              octaveSplitTest scale p = absPitch p >= (head $ map absPitch scale)
+>                              cleanOctave scale = (fst.octaveSplit) scale ++ map (trans 12) (snd.octaveSplit $ scale)
 > shift :: Int -> [PitchClass] -> [PitchClass]
 > shift n l= (iterate f l)!!n
 >		where f [] = []

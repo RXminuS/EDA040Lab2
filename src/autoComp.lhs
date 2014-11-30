@@ -9,17 +9,18 @@
 > import Data.List
 > import Data.Maybe
 >
+>
 > type Key = (PitchClass, Mode)
 > data Triad = TriMaj | TriMin deriving (Eq)
 > type Chord = (PitchClass, Triad)
 > data BassStyle = Basic | Calypso | Boogie deriving (Eq)
-> type ChordProgresion = [(Chord,Dur)]
+> type ChordProgression = [(Chord,Dur)]
 > type ChordPitch = (Pitch, Pitch, Pitch)
 >
 > -- note updaters for mappings
 > fd d n = n d v
 > vol  n = n   v
-> v      = [Volume 80]
+> v      = [Volume 60]
 >
 > -- repeat something n times
 > times 1     m = m
@@ -35,7 +36,7 @@
 >
 > testScalePattern = scalePattern (A, Major)
 >
-> autoBass :: BassStyle-> Key -> ChordProgresion -> Music
+> autoBass :: BassStyle-> Key -> ChordProgression -> Music
 > autoBass style key [] = Rest 0
 > autoBass Basic key (chord:[])
 >   | (snd chord == hn) = line $ zipWith fd [hn] [t!!0]
@@ -71,9 +72,6 @@
 >		where f [] = []
 >		      f (x:xs) = xs ++ [x]
 >
-> testAutoBass = autoBass Boogie (C,Major) [((C,TriMaj), wn), ((F, TriMaj), hn),((C,TriMaj),hn),((G,TriMaj),hn),((C,TriMaj),hn),((G,TriMaj),hn),((C,TriMaj),hn)]
->
->
 > ------------------------------------ Chords -------------------------------------
 >
 > --chordPattern :: Key ->[Pitch]
@@ -81,6 +79,10 @@
 > --chordPattern (pc, Minor) = zipWith trans [0, 2, 3, 5, 7, 8, 10,12,14,15,17,19] $ repeat (pc, 4)
 >
 > autoChord :: Key -> ChordProgression -> Music
+> autoChord _ cp@((c,_):_) = foldl (\acc x -> acc :+: x) (Rest 0) (combine ((permutate c)!!0) cp)
+>                          where combine last ((c,d):[]) = toChord d (minimize last (permutate c)):[]
+>                                combine last ((c,d):cp) = (toChord d (minimize last (permutate c)) ):(combine (minimize last (permutate c)) cp)
+>
 >
 > --chordChart :: Key -> [ChordPitch]
 > --chordChart key =  perm1 ++ perm2 ++ perm3
@@ -89,7 +91,10 @@
 > --                  perm3 = take 7 $ zip3 limitedRange (shift 3 limitedRange) (shift 5 limitedRange)
 > --                  limitedRange = chordPattern key
 >
-
+>
+> toChord :: Dur -> ChordPitch -> Music
+> toChord dur (a,b,c) = foldl (\acc x -> acc :=: (fd dur $ Note x) ) (Rest 0) [a,b,c]
+>
 > (|-|) :: Pitch -> Pitch -> Int
 > (|-|) a b = abs (absPitch a - absPitch b)
 >

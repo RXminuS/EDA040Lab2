@@ -1,0 +1,287 @@
+\documentclass{article}
+\usepackage{lipsum}
+\usepackage[margin=1.25in,letterpaper]{geometry}
+\usepackage{listings}
+
+\textbackslash{}begin\{document\}
+
+\section{AutoComp Documentation}
+
+\subsection{Imports:}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{module} \DataTypeTok{AutoComp} \KeywordTok{where}
+\KeywordTok{import }\DataTypeTok{Haskore} \KeywordTok{hiding} \NormalTok{(chord, }\DataTypeTok{Key}\NormalTok{)}
+\KeywordTok{import }\DataTypeTok{Data.List}
+\KeywordTok{import }\DataTypeTok{Data.Maybe}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Data Structures:}
+
+A key (consisting of a pitch class like C, D or E and a Major/Minor
+mode) denotes the key the song is played in
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{type} \DataTypeTok{Key} \FunctionTok{=} \NormalTok{(}\DataTypeTok{PitchClass}\NormalTok{, }\DataTypeTok{Mode}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Although many more `chord' triads exist we've restricted ourselves to a
+Major and Minor chord triad. These structures are used to find the right
+notes for a particular chord voicing.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{data} \DataTypeTok{Triad} \FunctionTok{=} \DataTypeTok{TriMaj} \FunctionTok{|} \DataTypeTok{TriMin} \KeywordTok{deriving} \NormalTok{(}\DataTypeTok{Eq}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+In a chord the PitchClass denotes the root note and the Triad will
+change the accompanying notes or chord voicing.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{type} \DataTypeTok{Chord} \FunctionTok{=} \NormalTok{(}\DataTypeTok{PitchClass}\NormalTok{, }\DataTypeTok{Triad}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Our bass style makes us swing in different ways.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{data} \DataTypeTok{BassStyle} \FunctionTok{=} \DataTypeTok{Basic} \FunctionTok{|} \DataTypeTok{Calypso} \FunctionTok{|} \DataTypeTok{Boogie} \KeywordTok{deriving} \NormalTok{(}\DataTypeTok{Eq}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+A chord progression is used to describe a song where each Chord is
+played for Dur duration
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{type} \DataTypeTok{ChordProgression} \FunctionTok{=} \NormalTok{[(}\DataTypeTok{Chord}\NormalTok{,}\DataTypeTok{Dur}\NormalTok{)]}
+\end{Highlighting}
+\end{Shaded}
+
+A ChordPitch is a more specific representation of a chord when compared
+to a general Chord data type. It explicitly states the pitches of all
+three notes (we only have triad chords) and is used as an intermediary
+step between a general Chord and a final Music data structure.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{type} \DataTypeTok{ChordPitch} \FunctionTok{=} \NormalTok{(}\DataTypeTok{Pitch}\NormalTok{, }\DataTypeTok{Pitch}\NormalTok{, }\DataTypeTok{Pitch}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Helper Functions:}
+
+This function was skilfully copied from the supplied code and thus
+requires no further explanation. The only adjustment that has been made
+is a reduced volume to enhance the final result.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{fd d n }\FunctionTok{=} \NormalTok{n d v}
+\NormalTok{vol  n }\FunctionTok{=} \NormalTok{n   v}
+\NormalTok{v      }\FunctionTok{=} \NormalTok{[}\DataTypeTok{Volume} \DecValTok{60}\NormalTok{]}
+\end{Highlighting}
+\end{Shaded}
+
+Again another beautiful example of `better stolen well than thought of
+poorly'. This function is maily used to explicitly state repetition
+instead of implicitly repeating chords.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{-- repeat something n times}
+\NormalTok{times }\DecValTok{1}     \NormalTok{m }\FunctionTok{=} \NormalTok{m}
+\NormalTok{times n m }\FunctionTok{=} \NormalTok{m }\FunctionTok{:+:} \NormalTok{(times (n }\FunctionTok{-} \DecValTok{1}\NormalTok{) m)}
+\end{Highlighting}
+\end{Shaded}
+
+Although small shift is used throughout both the bass line and chord
+voicing generation. It's role is to iteratively append the head to the
+tail (removing the head) 0..inf times. We then simply pick the n-th
+iteration and due to Haskells lazy evaluation this should be the only
+iteration actually calculated. Thank you Haskell!
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\OtherTok{shift ::} \DataTypeTok{Eq} \NormalTok{a }\OtherTok{=>} \DataTypeTok{Int} \OtherTok{->} \NormalTok{[a] }\OtherTok{->} \NormalTok{[a]}
+\NormalTok{shift n l}\FunctionTok{=} \NormalTok{(iterate f l)}\FunctionTok{!!}\NormalTok{n}
+      \KeywordTok{where} \NormalTok{f [] }\FunctionTok{=} \NormalTok{[]}
+            \NormalTok{f (x}\FunctionTok{:}\NormalTok{xs) }\FunctionTok{=} \NormalTok{xs }\FunctionTok{++} \NormalTok{[x]}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Bass Line:}
+
+The scalePattern returns all the notes for a particular key. For
+instance a C Major key is made up of CDEFGAB where each note is obtained
+by transposing the root note. Since this function is only used for
+generating the baseline we hardcoded a root note in the 3rd octave.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\OtherTok{scalePattern ::} \DataTypeTok{Key} \OtherTok{->}\NormalTok{[}\DataTypeTok{PitchClass}\NormalTok{]}
+\NormalTok{scalePattern (pc, }\DataTypeTok{Major}\NormalTok{) }\FunctionTok{=} \NormalTok{fst}\FunctionTok{.}\NormalTok{unzip}\FunctionTok{.}\NormalTok{zipWith trans [}\DecValTok{0}\NormalTok{, }\DecValTok{2}\NormalTok{, }\DecValTok{4}\NormalTok{, }\DecValTok{5}\NormalTok{, }\DecValTok{7}\NormalTok{, }\DecValTok{9}\NormalTok{, }\DecValTok{11}\NormalTok{] }\FunctionTok{$} \NormalTok{repeat (pc, }\DecValTok{3}\NormalTok{)}
+\NormalTok{scalePattern (pc, }\DataTypeTok{Minor}\NormalTok{) }\FunctionTok{=} \NormalTok{fst}\FunctionTok{.}\NormalTok{unzip}\FunctionTok{.}\NormalTok{zipWith trans [}\DecValTok{0}\NormalTok{, }\DecValTok{2}\NormalTok{, }\DecValTok{3}\NormalTok{, }\DecValTok{5}\NormalTok{, }\DecValTok{7}\NormalTok{, }\DecValTok{8}\NormalTok{, }\DecValTok{10}\NormalTok{] }\FunctionTok{$} \NormalTok{repeat (pc, }\DecValTok{3}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+The chordMode function is used to generate a list of fitting notes based
+on the key of the song and a particular chord. This daunting looking
+function achieves it's greatness in a very simple manner. In the first
+step we shift the scale pattern (of the song key) to the root note of
+the chord. For instance the scale C3-D3-E3-F3-G3-A3-B3 when applied to a
+GMaj chord becomes G3-A3-B3-C3-D3-E3-F3. Notice that that the pitches
+aren't increasing correctly since we simply shift and aren't transposing
+the notes. Therefore the octaveSplit and cleanOctave functions are used
+to first identify where this indescrepency happens and then to fix it.
+So G3-A3-B3-C3-D3-E3-F3 finally becomes G3-A3-B3-C4-D4-E4-F4.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\OtherTok{chordMode ::} \DataTypeTok{Key} \OtherTok{->} \DataTypeTok{Chord} \OtherTok{->} \NormalTok{[}\DataTypeTok{Dur}\OtherTok{->}\NormalTok{[}\DataTypeTok{NoteAttribute}\NormalTok{]}\OtherTok{->} \DataTypeTok{Music}\NormalTok{]}
+\NormalTok{chordMode key (pc,_) }\FunctionTok{=} \NormalTok{map }\DataTypeTok{Note} \FunctionTok{$} \NormalTok{cleanOctave }\FunctionTok{$} \NormalTok{zip transformedPitches (repeat }\DecValTok{3}\NormalTok{)}
+                       \KeywordTok{where} \NormalTok{f (}\DataTypeTok{Just} \NormalTok{a) }\FunctionTok{=} \NormalTok{shift a (scalePattern key)}
+                             \NormalTok{f _  }\FunctionTok{=} \NormalTok{take }\DecValTok{12} \FunctionTok{$} \NormalTok{repeat pc}
+                             \NormalTok{transformedPitches }\FunctionTok{=} \NormalTok{f (elemIndex pc (scalePattern key))}
+                             \NormalTok{octaveSplit scale }\FunctionTok{=} \NormalTok{partition (octaveSplitTest scale) scale}
+                             \NormalTok{octaveSplitTest scale p }\FunctionTok{=} \NormalTok{absPitch p }\FunctionTok{>=} \NormalTok{(head }\FunctionTok{$} \NormalTok{map absPitch scale)}
+                             \NormalTok{cleanOctave scale }\FunctionTok{=} \NormalTok{(fst}\FunctionTok{.}\NormalTok{octaveSplit) scale }\FunctionTok{++} \NormalTok{map (trans }\DecValTok{12}\NormalTok{) (snd}\FunctionTok{.}\NormalTok{octaveSplit }\FunctionTok{$} \NormalTok{scale)}
+\end{Highlighting}
+\end{Shaded}
+
+The autoBass function is where the low-register magic happens. First the
+key of the Chord is transformed to fit the key of the song generating a
+`list of fitting notes to pick from'. By performing pattern matching on
+the BassStyle for each Chord in the ChordProgression a unique picking
+pattern is generated. The picking pattern consists of the semitone
+differences between the root note. This picking pattern further depends
+on the duration of the chord where the only cases handled are where the
+chord is a `wn' (Whole Note) or a `hn' (Half Note).
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\OtherTok{autoBass ::} \DataTypeTok{BassStyle}\OtherTok{->} \DataTypeTok{Key} \OtherTok{->} \DataTypeTok{ChordProgression} \OtherTok{->} \DataTypeTok{Music}
+\NormalTok{autoBass style key [] }\FunctionTok{=} \DataTypeTok{Rest} \DecValTok{0}
+\NormalTok{autoBass }\DataTypeTok{Basic} \NormalTok{key (chord}\FunctionTok{:}\NormalTok{[])}
+  \FunctionTok{|} \NormalTok{(snd chord }\FunctionTok{==} \NormalTok{hn) }\FunctionTok{=} \NormalTok{line }\FunctionTok{$} \NormalTok{zipWith fd [hn] [t}\FunctionTok{!!}\DecValTok{0}\NormalTok{]}
+  \FunctionTok{|} \NormalTok{(snd chord }\FunctionTok{==} \NormalTok{wn) }\FunctionTok{=} \NormalTok{line }\FunctionTok{$} \NormalTok{zipWith fd [hn,hn] [t}\FunctionTok{!!}\DecValTok{0}\NormalTok{,t}\FunctionTok{!!}\DecValTok{4}\NormalTok{]}
+  \FunctionTok{|} \NormalTok{otherwise }\FunctionTok{=} \DataTypeTok{Rest} \NormalTok{(snd chord)}
+  \KeywordTok{where} \NormalTok{t }\FunctionTok{=}  \NormalTok{chordMode key (fst }\FunctionTok{$} \NormalTok{chord)}
+
+\NormalTok{autoBass }\DataTypeTok{Calypso} \NormalTok{key (chord}\FunctionTok{:}\NormalTok{[])}
+  \FunctionTok{|} \NormalTok{(snd chord }\FunctionTok{==} \NormalTok{hn) }\FunctionTok{=} \NormalTok{bar}
+  \FunctionTok{|} \NormalTok{(snd chord }\FunctionTok{==} \NormalTok{wn) }\FunctionTok{=} \NormalTok{times }\DecValTok{2} \NormalTok{bar}
+  \FunctionTok{|} \NormalTok{otherwise }\FunctionTok{=} \DataTypeTok{Rest} \NormalTok{(snd chord)}
+  \KeywordTok{where} \NormalTok{bar }\FunctionTok{=} \DataTypeTok{Rest} \NormalTok{qn }\FunctionTok{:+:} \NormalTok{(line }\FunctionTok{$} \NormalTok{zipWith fd [en,en] [t}\FunctionTok{!!}\DecValTok{0}\NormalTok{,t}\FunctionTok{!!}\DecValTok{2}\NormalTok{])}
+        \NormalTok{t   }\FunctionTok{=} \NormalTok{chordMode key (fst }\FunctionTok{$} \NormalTok{chord)}
+
+\NormalTok{autoBass }\DataTypeTok{Boogie} \NormalTok{key (chord}\FunctionTok{:}\NormalTok{[])}
+  \FunctionTok{|} \NormalTok{(snd chord }\FunctionTok{==} \NormalTok{hn) }\FunctionTok{=} \NormalTok{bar}
+  \FunctionTok{|} \NormalTok{(snd chord }\FunctionTok{==} \NormalTok{wn) }\FunctionTok{=} \NormalTok{times }\DecValTok{2} \NormalTok{bar}
+  \FunctionTok{|} \NormalTok{otherwise }\FunctionTok{=} \DataTypeTok{Rest} \NormalTok{(snd chord)}
+  \KeywordTok{where} \NormalTok{bar }\FunctionTok{=} \NormalTok{line }\FunctionTok{$} \NormalTok{zipWith fd [en,en,en,en] [t}\FunctionTok{!!}\DecValTok{0}\NormalTok{,t}\FunctionTok{!!}\DecValTok{4}\NormalTok{,t}\FunctionTok{!!}\DecValTok{5}\NormalTok{,t}\FunctionTok{!!}\DecValTok{4}\NormalTok{]}
+        \NormalTok{t }\FunctionTok{=}  \NormalTok{chordMode key (fst }\FunctionTok{$} \NormalTok{chord)}
+\NormalTok{autoBass style key (c}\FunctionTok{:}\NormalTok{cs) }\FunctionTok{=} \NormalTok{autoBass style key [c] }\FunctionTok{:+:} \NormalTok{autoBass style key cs}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Chord Voicing:}
+
+The toChord function transforms a ChordPitch into music by applying a
+specific duration and transforming each individual Pitch into a
+corresponding Note. Since the ChordPitch is a much more appropriate
+datatype than Music to use during calculations this function bridges the
+abstraction layer it imposes.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\OtherTok{toChord ::} \DataTypeTok{Dur} \OtherTok{->} \DataTypeTok{ChordPitch} \OtherTok{->} \DataTypeTok{Music}
+\NormalTok{toChord dur (a,b,c) }\FunctionTok{=} \NormalTok{foldl (\textbackslash{}acc x }\OtherTok{->} \NormalTok{acc }\FunctionTok{:=:} \NormalTok{(fd dur }\FunctionTok{$} \DataTypeTok{Note} \NormalTok{x) ) (}\DataTypeTok{Rest} \DecValTok{0}\NormalTok{) [a,b,c]}
+\end{Highlighting}
+\end{Shaded}
+
+This operator (notice the fitting notation) takes the absolute value of
+the difference between two pitches. For instance
+\(C,3 |-| C,4 = C,4 |-| C,3 = 12\).
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\OtherTok{(|-|) ::} \DataTypeTok{Pitch} \OtherTok{->} \DataTypeTok{Pitch} \OtherTok{->} \DataTypeTok{Int}
+\NormalTok{(}\FunctionTok{|-|}\NormalTok{) a b }\FunctionTok{=} \NormalTok{abs (absPitch a }\FunctionTok{-} \NormalTok{absPitch b)}
+\end{Highlighting}
+\end{Shaded}
+
+The distance function returns the sum of the distance between a chords
+corresponding notes. Since we always represent chords in a uniform
+matter (lowest notes to the left) this function returns a correct value.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\OtherTok{distance ::} \DataTypeTok{ChordPitch} \OtherTok{->} \DataTypeTok{ChordPitch} \OtherTok{->} \DataTypeTok{Int}
+\NormalTok{distance (a1, b1, c1) (a2, b2, c2) }\FunctionTok{=} \NormalTok{(a1}\FunctionTok{|-|}\NormalTok{a2) }\FunctionTok{+} \NormalTok{(b1}\FunctionTok{|-|}\NormalTok{b2) }\FunctionTok{+} \NormalTok{(c1}\FunctionTok{|-|}\NormalTok{c2)}
+\end{Highlighting}
+\end{Shaded}
+
+This nifty little minimize function picks a chord from a list of chords
+where the distance (as defined previously) between it and another
+supplied `base-chord' is minimized.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\OtherTok{minimize ::} \DataTypeTok{ChordPitch} \OtherTok{->} \NormalTok{[}\DataTypeTok{ChordPitch}\NormalTok{] }\OtherTok{->} \DataTypeTok{ChordPitch}
+\NormalTok{minimize prev (x}\FunctionTok{:}\NormalTok{xs) }\FunctionTok{=} \NormalTok{foldl (\textbackslash{}acc y }\OtherTok{->} \KeywordTok{if} \NormalTok{distance prev y }\FunctionTok{<} \NormalTok{distance prev acc }\KeywordTok{then} \NormalTok{y }\KeywordTok{else} \NormalTok{acc) x xs}
+\end{Highlighting}
+\end{Shaded}
+
+The permutate function returns all the possible chord voicings within a
+limited range of pitches. Since this function is only used for chord
+voicing the root note of is fixed to the 4th octave. It enforce that the
+first rule in the lab-requirements is respected. The third rule is
+respected also because the hardcoded patterns always generate the
+closest voicing within the triad.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\OtherTok{permutate ::} \DataTypeTok{Chord} \OtherTok{->} \NormalTok{[}\DataTypeTok{ChordPitch}\NormalTok{]}
+\NormalTok{permutate (p, t)}
+          \FunctionTok{|} \NormalTok{t }\FunctionTok{==} \DataTypeTok{TriMin} \FunctionTok{=} \NormalTok{map toTuple (zipWith (zipWith trans) minPat rootNote)}
+          \FunctionTok{|} \NormalTok{otherwise }\FunctionTok{=} \NormalTok{map toTuple (zipWith (zipWith trans) majPat rootNote)}
+          \KeywordTok{where} \NormalTok{toTuple [a,b,c] }\FunctionTok{=} \NormalTok{(a,b,c)}
+                \NormalTok{minPat }\FunctionTok{=} \NormalTok{[[}\DecValTok{0}\NormalTok{,}\DecValTok{3}\NormalTok{,}\DecValTok{7}\NormalTok{],[}\DecValTok{3}\NormalTok{,}\DecValTok{7}\NormalTok{,}\DecValTok{12}\NormalTok{],[}\DecValTok{7}\NormalTok{,}\DecValTok{12}\NormalTok{,}\DecValTok{15}\NormalTok{]]}
+                \NormalTok{majPat }\FunctionTok{=} \NormalTok{[[}\DecValTok{0}\NormalTok{,}\DecValTok{4}\NormalTok{,}\DecValTok{7}\NormalTok{],[}\DecValTok{4}\NormalTok{,}\DecValTok{7}\NormalTok{,}\DecValTok{12}\NormalTok{],[}\DecValTok{7}\NormalTok{,}\DecValTok{12}\NormalTok{,}\DecValTok{16}\NormalTok{]]}
+                \NormalTok{rootNote }\FunctionTok{=} \NormalTok{(repeat}\FunctionTok{.}\NormalTok{repeat) (p,}\DecValTok{4}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Finaly the autoChord function combines the power of `minimize' and
+permutate by for each chord in the ChordProgression picking the voicing
+that lies closest to the previously played chord (just guaranteeing rule
+2). The first chord played will always have its root in the lowest note
+since we select the first item from all available permutations. The
+combine helper function recusively applies this chord selection
+algorithm to the end of the song and then the main foldl uses the chosen
+chords to transform into the final Music.
+
+\begin{lstlisting}[breaklines,basicstyle=\ttfamily]
+> autoChord :: Key -> ChordProgression -> Music
+> autoChord _ cp@((c,_):_) = foldl (\acc x -> acc :+: x) (Rest 0) (combine ((permutate c)!!0) cp)
+>                          where combine last ((c,d):[]) = toChord d (minimize last (permutate c)):[]
+>                                combine last ((c,d):cp) = (toChord d (minimize last (permutate c)) ):(combine (minimize last (permutate c)) cp)
+\end{lstlisting}
+
+\subsection{Final Thoughts}
+
+We haven't implemented the autoComp function because during the
+experiments with different volumes and instruments we found that we
+needed the freedom to choose these individually for the bass and chord
+lines. Therefore we chose to simply generate and combine these lines in
+the music files `twinkle.hs' and `clocks.hs'.
+
+\textbackslash{}end\{document\}

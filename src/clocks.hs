@@ -32,9 +32,10 @@ mainVoice  = b1 :+: times 2 b2 :+: b3
 clocksChords =
     [((D,AC.TriMaj),wn), ((A, AC.TriMin), wn), ((A, AC.TriMin), wn), ((E, AC.TriMin), wn)]
 
-melodie = Instr "piano" (Tempo 2 (Phrase [Dyn SF] mainVoice))
-bass = Instr "bass" (Tempo 2 (Phrase [Dyn SF] (AC.autoBass AC.Basic (G,Major) clocksChords)))
-chords = Instr "guitar" (Tempo 2 (Phrase [Dyn SF] (AC.autoChord (G,Major) clocksChords)))
+melodie = Instr "Bright Acoustic Piano" (Tempo 2 (Phrase [Dyn SF] mainVoice))
+melodie2 = Instr "Xylophone" (Tempo 2 (Phrase [Dyn SF] mainVoice))
+bass = Instr "Slap Bass 1" (Tempo 2 (Phrase [Dyn SF] (AC.autoBass AC.Boogie (G ,Major) clocksChords)))
+chords = Instr "Distortion Guitar" (Tempo 2 (Phrase [Dyn SF] (AC.autoChord (G,Major) clocksChords)))
 
-testClocks = (melodie :=: chords) :+: (melodie :=: bass :=: chords)
+testClocks = (melodie :=: melodie2 :=: chords ) :+: (melodie :=: melodie2 :=: bass :=: chords)
 -- :=: bass :=: chords

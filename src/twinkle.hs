@@ -33,11 +33,11 @@ twinkleChords =
     [((C,AC.TriMaj), hn), ((G, AC.TriMaj), hn), ((C,AC.TriMaj), hn), ((G, AC.TriMaj), hn), ((C,AC.TriMaj), hn), ((G, AC.TriMaj), hn), ((C,AC.TriMaj), hn), ((G, AC.TriMaj), hn)] ++
     [((C,AC.TriMaj), hn), ((C,AC.TriMaj), hn), ((F, AC.TriMaj), hn),((C,AC.TriMaj),hn),((G,AC.TriMaj),hn),((C,AC.TriMaj),hn),((G,AC.TriMaj),hn),((C,AC.TriMaj),hn)]
 
-melodie = Instr "Orchestral Harp" (Tempo 2 (Phrase [Dyn SF] mainVoice))
-bassB = Instr "Tremolo Strings" (Tempo 2 (Phrase [Dyn SF] (AC.autoBass AC.Basic (C,Major) twinkleChords)))
-bassC = Instr "Tremolo Strings" (Tempo 2 (Phrase [Dyn SF] (AC.autoBass AC.Calypso (C,Major) twinkleChords)))
-bassBo = Instr "Tremolo Strings" (Tempo 2 (Phrase [Dyn SF] (AC.autoBass AC.Boogie (C,Major) twinkleChords)))
-chords = Instr "Rhodes Piano" (Tempo 2 (Phrase [Dyn SF] (AC.autoChord (C,Major) twinkleChords)))
+melodie = Instr "Piano" (Tempo 2 (Phrase [Dyn SF] mainVoice))
+bassB = Instr "Piano" (Tempo 2 (Phrase [Dyn SF] (AC.autoBass AC.Basic (C,Major) twinkleChords)))
+bassC = Instr "Piano" (Tempo 2 (Phrase [Dyn SF] (AC.autoBass AC.Calypso (C,Major) twinkleChords)))
+bassBo = Instr "Piano" (Tempo 2 (Phrase [Dyn SF] (AC.autoBass AC.Boogie (C,Major) twinkleChords)))
+chords = Instr "Piano" (Tempo 2 (Phrase [Dyn SF] (AC.autoChord (C,Major) twinkleChords)))
 
 twinkleBasic   = melodie :=: bassB :=: chords
 twinkleCalypso = melodie :=: bassC :=: chords
